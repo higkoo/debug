@@ -15,16 +15,16 @@ $host[8] = "www.youku.com";
 $host[9] = "news.163.com";
 $host[10] = "www.kingsoft.com";
 
-$services[1] = "User Documents, T: Drive";
-$services[2] = "Active Directory";
-$services[3] = "Backup Active Directory";
-$services[4] = "Email, Webmail";
-$services[5] = "Sims, Payroll, G: Drive";
-$services[6] = "Sharepoint VLE 2003";
-$services[7] = "Sharepoint VLE 2007 Test";
-$services[8] = "Oliver Library Database";
-$services[9] = "Backup, Shared Printers";
-$services[10] = "User Settings";
+$services[1] = "bilibili";
+$services[2] = "baidu";
+$services[3] = "google";
+$services[4] = "bing";
+$services[5] = "iqiyi";
+$services[6] = "12306";
+$services[7] = "github";
+$services[8] = "youku";
+$services[9] = "163";
+$services[10] = "kingsoft";
 
 // You don't need to edit anything beyond here
 echo "<table border=\"0\" align=\"center\">";
