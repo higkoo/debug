@@ -44,7 +44,7 @@ foreach ($host as $value)
 	  if ( !curl_errno($ch))
   		{
 			#echo "<td width=60><strong><font color='#006600'>UP</font></strong></td>";
-			echo "<td width=60><img src='http://icons.iconarchive.com/icons/gakuseisean/ivista/128/Good-or-Tick-icon.png'></td>";
+			echo "<td width=60><img src='https://qiye.jiankongbao.com/images/ico_19.png";
 			echo "<td width=230>". $services[$counter] . "</td>";
 		    echo "<td>Reply Speed ";
 		  $info = curl_getinfo($ch);
@@ -53,7 +53,7 @@ foreach ($host as $value)
 	  else 
 		{
 			#echo "<td width=60><strong><font color='#990000'>DOWN</font></strong></td>";
-			echo "<td width=60><img src='https://upload.wikimedia.org/wikipedia/commons/6/61/Crystal_128_error.png'></td>";
+			echo "<td width=60><img src='https://qiye.jiankongbao.com/images/ico_20.png'></td>";
 			echo "<td width=230>". $services[$counter] . "</td>";
 		    echo "<td>";
 			echo "Timeout...";
