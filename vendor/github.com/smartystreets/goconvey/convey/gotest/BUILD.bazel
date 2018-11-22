@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["utils.go"],
-    importmap = "vendor/github.com/smartystreets/goconvey/convey/gotest",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/smartystreets/goconvey/convey/gotest",
     importpath = "github.com/smartystreets/goconvey/convey/gotest",
     visibility = ["//visibility:public"],
 )

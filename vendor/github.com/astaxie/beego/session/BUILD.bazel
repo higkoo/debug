@@ -9,7 +9,7 @@ go_library(
         "sess_utils.go",
         "session.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/session",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/session",
     importpath = "github.com/astaxie/beego/session",
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/astaxie/beego/utils:go_default_library"],

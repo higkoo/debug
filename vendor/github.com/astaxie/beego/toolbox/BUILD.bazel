@@ -8,7 +8,7 @@ go_library(
         "statistics.go",
         "task.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/toolbox",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/toolbox",
     importpath = "github.com/astaxie/beego/toolbox",
     visibility = ["//visibility:public"],
 )

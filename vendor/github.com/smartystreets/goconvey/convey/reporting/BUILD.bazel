@@ -16,7 +16,7 @@ go_library(
         "statistics.go",
         "story.go",
     ],
-    importmap = "vendor/github.com/smartystreets/goconvey/convey/reporting",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/smartystreets/goconvey/convey/reporting",
     importpath = "github.com/smartystreets/goconvey/convey/reporting",
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/smartystreets/goconvey/convey/gotest:go_default_library"],

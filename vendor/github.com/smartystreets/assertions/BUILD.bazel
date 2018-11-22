@@ -16,7 +16,7 @@ go_library(
         "time.go",
         "type.go",
     ],
-    importmap = "vendor/github.com/smartystreets/assertions",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/smartystreets/assertions",
     importpath = "github.com/smartystreets/assertions",
     visibility = ["//visibility:public"],
     deps = [

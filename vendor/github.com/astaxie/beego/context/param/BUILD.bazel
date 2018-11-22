@@ -8,7 +8,7 @@ go_library(
         "options.go",
         "parsers.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/context/param",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/context/param",
     importpath = "github.com/astaxie/beego/context/param",
     visibility = ["//visibility:public"],
     deps = [
