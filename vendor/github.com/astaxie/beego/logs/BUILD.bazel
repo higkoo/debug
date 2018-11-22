@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "accesslog.go",
+        "color.go",
+        "color_windows.go",
+        "conn.go",
+        "console.go",
+        "file.go",
+        "jianliao.go",
+        "log.go",
+        "logger.go",
+        "multifile.go",
+        "slack.go",
+        "smtp.go",
+    ],
+    importmap = "vendor/github.com/astaxie/beego/logs",
+    importpath = "github.com/astaxie/beego/logs",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    srcs = ["default_test.go"],
+    deps = [
+        "//vendor/github.com/astaxie/beego:go_default_library",
+        "//vendor/github.com/smartystreets/goconvey/convey:go_default_library",
+        "@com_gitlab_higkoohk_mash//routers:go_default_library",
+    ],
+)

@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "conn.go",
+        "grace.go",
+        "listener.go",
+        "server.go",
+    ],
+    importmap = "vendor/github.com/astaxie/beego/grace",
+    importpath = "github.com/astaxie/beego/grace",
+    visibility = ["//visibility:public"],
+)

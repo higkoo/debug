@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "conv.go",
+        "methodparams.go",
+        "options.go",
+        "parsers.go",
+    ],
+    importmap = "vendor/github.com/astaxie/beego/context/param",
+    importpath = "github.com/astaxie/beego/context/param",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/astaxie/beego/context:go_default_library",
+        "//vendor/github.com/astaxie/beego/logs:go_default_library",
+    ],
+)
