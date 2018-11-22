@@ -10,7 +10,7 @@ go_library(
         "renderer.go",
         "response.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/context",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/context",
     importpath = "github.com/astaxie/beego/context",
     visibility = ["//visibility:public"],
     deps = [

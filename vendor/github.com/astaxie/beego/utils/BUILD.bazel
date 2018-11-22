@@ -12,7 +12,7 @@ go_library(
         "slice.go",
         "utils.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/utils",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/utils",
     importpath = "github.com/astaxie/beego/utils",
     visibility = ["//visibility:public"],
 )

@@ -8,7 +8,7 @@ go_library(
         "ini.go",
         "json.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/config",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/config",
     importpath = "github.com/astaxie/beego/config",
     visibility = ["//visibility:public"],
 )

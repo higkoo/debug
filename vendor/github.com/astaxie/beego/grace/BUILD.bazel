@@ -8,7 +8,7 @@ go_library(
         "listener.go",
         "server.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/grace",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/grace",
     importpath = "github.com/astaxie/beego/grace",
     visibility = ["//visibility:public"],
 )

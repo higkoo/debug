@@ -10,7 +10,7 @@ go_library(
         "stack_tags.go",
         "stack_tags_main.go",
     ],
-    importmap = "vendor/github.com/jtolds/gls",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/jtolds/gls",
     importpath = "github.com/jtolds/gls",
     visibility = ["//visibility:public"],
 )

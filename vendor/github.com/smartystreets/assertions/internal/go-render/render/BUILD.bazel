@@ -6,7 +6,7 @@ go_library(
         "render.go",
         "render_time.go",
     ],
-    importmap = "vendor/github.com/smartystreets/assertions/internal/go-render/render",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/smartystreets/assertions/internal/go-render/render",
     importpath = "github.com/smartystreets/assertions/internal/go-render/render",
     visibility = ["//vendor/github.com/smartystreets/assertions:__subpackages__"],
 )

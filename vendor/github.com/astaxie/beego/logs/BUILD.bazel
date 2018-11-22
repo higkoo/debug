@@ -16,7 +16,7 @@ go_library(
         "slack.go",
         "smtp.go",
     ],
-    importmap = "vendor/github.com/astaxie/beego/logs",
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/logs",
     importpath = "github.com/astaxie/beego/logs",
     visibility = ["//visibility:public"],
 )
