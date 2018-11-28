@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "sess_cookie.go",
+        "sess_file.go",
+        "sess_mem.go",
+        "sess_utils.go",
+        "session.go",
+    ],
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/session",
+    importpath = "github.com/astaxie/beego/session",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/astaxie/beego/utils:go_default_library"],
+)

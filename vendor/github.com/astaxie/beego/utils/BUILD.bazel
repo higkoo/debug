@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "caller.go",
+        "debug.go",
+        "file.go",
+        "mail.go",
+        "rand.go",
+        "safemap.go",
+        "slice.go",
+        "utils.go",
+    ],
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/utils",
+    importpath = "github.com/astaxie/beego/utils",
+    visibility = ["//visibility:public"],
+)

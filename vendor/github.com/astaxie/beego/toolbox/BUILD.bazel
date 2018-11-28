@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "healthcheck.go",
+        "profile.go",
+        "statistics.go",
+        "task.go",
+    ],
+    importmap = "gitlab.com/higkoohk/Mash/vendor/github.com/astaxie/beego/toolbox",
+    importpath = "github.com/astaxie/beego/toolbox",
+    visibility = ["//visibility:public"],
+)

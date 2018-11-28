@@ -1,0 +1,51 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+# gazelle:prefix gitlab.com/higkoohk/Mash
+
+package(default_visibility = ["//visibility:public"])
+
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+gazelle(name = "gazelle")
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "bazel-*/**",
+            ".git/**",
+            ".idea/**",
+            "job/**",
+            "ops/**",
+        ],
+    ),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "gitlab.com/higkoohk/Mash",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//routers:go_default_library",
+        "//vendor/github.com/astaxie/beego:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "Mash",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
