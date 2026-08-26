@@ -113,7 +113,9 @@ projectRouter.post('/import', async (req: Request, res: Response) => {
     const readme = readReadme(projectDir);
 
     const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'untitled';
-    const projectName = validation.config?.name || repoName;
+    const projectName = validation.name || repoName;
+    const projectDesc = validation.config?.description || validation.config?.project?.description || '';
+    const projectAuthor = validation.config?.author || validation.config?.project?.author || '';
 
     // Save to database (guest user if not authenticated)
     const userId = getUserId(req);
@@ -122,9 +124,9 @@ projectRouter.post('/import', async (req: Request, res: Response) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
-        projectId, userId, projectName, validation.config?.description || '',
+        projectId, userId, projectName, projectDesc,
         repoUrl, repoType, 'import', projectDir, true,
-        validation.config?.author ? [validation.config.author] : [],
+        projectAuthor ? [projectAuthor] : [],
         readme, JSON.stringify(fileTree), JSON.stringify(validation.config || {}),
       ]
     );
@@ -182,14 +184,17 @@ projectRouter.post(
 
       // Save to database (guest user if not authenticated)
       const userId = getUserId(req);
+      const uploadName = validation.name || 'untitled';
+      const uploadDesc = validation.config?.description || validation.config?.project?.description || '';
+      const uploadAuthor = validation.config?.author || validation.config?.project?.author || '';
       const result = await query(
         `INSERT INTO projects (id, user_id, name, description, source_type, local_path, is_valid_marivo, tags, readme, file_structure, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
-          projectId, userId, validation.config?.name || 'untitled',
-          validation.config?.description || '', 'upload', projectDir, true,
-          validation.config?.author ? [validation.config.author] : [],
+          projectId, userId, uploadName, uploadDesc,
+          'upload', projectDir, true,
+          uploadAuthor ? [uploadAuthor] : [],
           readme, JSON.stringify(fileTree), JSON.stringify(validation.config || {}),
         ]
       );

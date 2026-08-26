@@ -60,8 +60,14 @@ export interface AnalysisSession {
 }
 
 export interface MarivoConfig {
-  name: string;
-  version: string;
+  project?: {
+    name: string;
+    version: string;
+    description?: string;
+    author?: string;
+  };
+  name?: string;
+  version?: string;
   description?: string;
   author?: string;
   data_source?: string;

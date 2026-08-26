@@ -6,6 +6,7 @@ import type { MarivoConfig } from '../types';
 export async function validateMarivoProject(projectPath: string): Promise<{
   valid: boolean;
   config?: MarivoConfig;
+  name: string;
   errors: string[];
 }> {
   const errors: string[] = [];
@@ -14,41 +15,42 @@ export async function validateMarivoProject(projectPath: string): Promise<{
   const configPath = path.join(projectPath, 'marivo.toml');
   if (!fs.existsSync(configPath)) {
     errors.push('缺少 marivo.toml 配置文件');
-    return { valid: false, errors };
+    return { valid: false, name: '', errors };
   }
 
   // Parse and validate config
+  let config: MarivoConfig;
   try {
     const configContent = fs.readFileSync(configPath, 'utf-8');
-    const config = toml.parse(configContent) as MarivoConfig;
-
-    if (!config.name) {
-      errors.push('marivo.toml 缺少 name 字段');
-    }
+    config = toml.parse(configContent) as MarivoConfig;
   } catch (err) {
     errors.push(`marivo.toml 解析失败: ${(err as Error).message}`);
-    return { valid: false, errors };
+    return { valid: false, name: '', errors };
+  }
+
+  // Extract name - can be at root or under [project] table
+  const projectName = config.name || config.project?.name || '';
+  if (!projectName) {
+    errors.push('marivo.toml 缺少 name 字段（可在顶层或 [project] 表下）');
   }
 
   // Check models directory
   const modelsDir = path.join(projectPath, 'models');
   if (!fs.existsSync(modelsDir) || !fs.statSync(modelsDir).isDirectory()) {
     errors.push('缺少 models/ 目录');
-    return { valid: false, errors };
   }
 
-  const models = fs.readdirSync(modelsDir);
-  if (models.length === 0) {
-    errors.push('models/ 目录为空，需要至少一个模型定义文件');
+  if (errors.length === 0 && fs.existsSync(modelsDir)) {
+    const models = fs.readdirSync(modelsDir);
+    if (models.length === 0) {
+      errors.push('models/ 目录为空，需要至少一个模型定义文件');
+    }
   }
-
-  // Read config
-  const configContent = fs.readFileSync(configPath, 'utf-8');
-  const config = toml.parse(configContent) as MarivoConfig;
 
   return {
     valid: errors.length === 0,
     config,
+    name: projectName,
     errors,
   };
 }
