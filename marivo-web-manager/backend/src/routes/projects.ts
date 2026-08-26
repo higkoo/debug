@@ -7,6 +7,7 @@ import { simpleGit } from 'simple-git';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { validateMarivoProject, buildFileTree, readReadme } from '../utils/marivo-validator';
+import { getUserId } from '../utils/guest';
 import { query } from '../models/database';
 import type { Project } from '../types';
 
@@ -84,8 +85,8 @@ projectRouter.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/projects/import - Import from GitHub/GitLab URL
-projectRouter.post('/import', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/projects/import - Import from GitHub/GitLab URL (no auth required for public repos)
+projectRouter.post('/import', async (req: Request, res: Response) => {
   const { repoUrl, repoType = 'github' } = req.body;
 
   if (!repoUrl) {
@@ -96,14 +97,13 @@ projectRouter.post('/import', authMiddleware, async (req: AuthenticatedRequest, 
   const projectDir = path.join(PROJECTS_DIR, projectId);
 
   try {
-    // Clone the repository
+    // Clone the repository (read-only, shallow clone)
     await simpleGit().clone(repoUrl, projectDir, ['--depth=1']);
 
     // Validate Marivo project
     const validation = await validateMarivoProject(projectDir);
 
     if (!validation.valid) {
-      // Remove the cloned directory
       fs.rmSync(projectDir, { recursive: true, force: true });
       throw new AppError(400, `项目验证失败: ${validation.errors.join('; ')}`);
     }
@@ -112,17 +112,17 @@ projectRouter.post('/import', authMiddleware, async (req: AuthenticatedRequest, 
     const fileTree = buildFileTree(projectDir);
     const readme = readReadme(projectDir);
 
-    // Extract name from repo URL or config
     const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'untitled';
     const projectName = validation.config?.name || repoName;
 
-    // Save to database
+    // Save to database (guest user if not authenticated)
+    const userId = getUserId(req);
     const result = await query(
       `INSERT INTO projects (id, user_id, name, description, repo_url, repo_type, source_type, local_path, is_valid_marivo, tags, readme, file_structure, metadata)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
-        projectId, req.user!.id, projectName, validation.config?.description || '',
+        projectId, userId, projectName, validation.config?.description || '',
         repoUrl, repoType, 'import', projectDir, true,
         validation.config?.author ? [validation.config.author] : [],
         readme, JSON.stringify(fileTree), JSON.stringify(validation.config || {}),
@@ -131,7 +131,6 @@ projectRouter.post('/import', authMiddleware, async (req: AuthenticatedRequest, 
 
     res.status(201).json({ project: result.rows[0] });
   } catch (err) {
-    // Cleanup on failure
     if (fs.existsSync(projectDir)) {
       fs.rmSync(projectDir, { recursive: true, force: true });
     }
@@ -140,12 +139,11 @@ projectRouter.post('/import', authMiddleware, async (req: AuthenticatedRequest, 
   }
 });
 
-// POST /api/projects/upload - Upload ZIP
+// POST /api/projects/upload - Upload ZIP (no auth required, uses guest user)
 projectRouter.post(
   '/upload',
-  authMiddleware,
   upload.single('file'),
-  async (req: AuthenticatedRequest, res: Response) => {
+  async (req: Request, res: Response) => {
     if (!req.file) {
       throw new AppError(400, '请上传一个 ZIP 文件');
     }
@@ -182,13 +180,14 @@ projectRouter.post(
       const fileTree = buildFileTree(projectDir);
       const readme = readReadme(projectDir);
 
-      // Save to database
+      // Save to database (guest user if not authenticated)
+      const userId = getUserId(req);
       const result = await query(
         `INSERT INTO projects (id, user_id, name, description, source_type, local_path, is_valid_marivo, tags, readme, file_structure, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
-          projectId, req.user!.id, validation.config?.name || 'untitled',
+          projectId, userId, validation.config?.name || 'untitled',
           validation.config?.description || '', 'upload', projectDir, true,
           validation.config?.author ? [validation.config.author] : [],
           readme, JSON.stringify(fileTree), JSON.stringify(validation.config || {}),

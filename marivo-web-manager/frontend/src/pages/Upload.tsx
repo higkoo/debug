@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload as UploadIcon, Github, GitBranch, LinkIcon, FileArchive, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { projectApi } from '../services/api'
+import { projectApi, authApi } from '../services/api'
 import type { Project } from '../types'
 
 export default function Upload() {
@@ -15,6 +15,19 @@ export default function Upload() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [importedProject, setImportedProject] = useState<Project | null>(null)
+
+  // Auto-login as guest for anonymous import/upload
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      authApi.guest().then((res) => {
+        localStorage.setItem('token', res.data.token)
+        localStorage.setItem('user', JSON.stringify(res.data.user))
+      }).catch(() => {
+        // Guest login failed, import/upload will still work without auth
+      })
+    }
+  }, [])
 
   const handleImportUrl = async () => {
     if (!repoUrl.trim()) {
