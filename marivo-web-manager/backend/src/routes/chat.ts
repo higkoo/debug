@@ -108,6 +108,45 @@ chatRouter.delete('/conversation/:id', authMiddleware, async (req: Authenticated
   res.json({ message: '对话已删除' });
 });
 
+// GET /api/chat/bookmarks - Get user's bookmarks
+chatRouter.get('/bookmarks', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  const result = await query(
+    `SELECT b.*, c.title as conversation_title, p.name as project_name
+     FROM bookmarks b
+     LEFT JOIN conversations c ON b.conversation_id = c.id
+     LEFT JOIN projects p ON b.project_id = p.id
+     WHERE b.user_id = $1
+     ORDER BY b.created_at DESC`,
+    [req.user!.id]
+  );
+  res.json({ bookmarks: result.rows });
+});
+
+// POST /api/chat/bookmarks - Create a bookmark
+chatRouter.post('/bookmarks', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  const { conversationId, projectId, label, note } = req.body;
+
+  if (!conversationId) {
+    throw new AppError(400, '请提供对话 ID');
+  }
+
+  const result = await query(
+    `INSERT INTO bookmarks (id, user_id, conversation_id, project_id, label, note)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [uuidv4(), req.user!.id, conversationId, projectId || null, label || '书签', note || '']
+  );
+
+  res.status(201).json({ bookmark: result.rows[0] });
+});
+
+// DELETE /api/chat/bookmarks/:id - Delete a bookmark
+chatRouter.delete('/bookmarks/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  await query('DELETE FROM bookmarks WHERE id = $1 AND user_id = $2', [
+    req.params.id, req.user!.id,
+  ]);
+  res.json({ message: '书签已删除' });
+});
+
 function buildProjectContext(project: any): string {
   return `项目名称: ${project.name}
 描述: ${project.description || '无'}

@@ -1,15 +1,14 @@
 import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { execSync, exec } from 'child_process';
-import path from 'path';
 import fs from 'fs';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { query } from '../models/database';
+import { globalTaskQueue } from '../services/taskQueue';
 
 export const analysisRouter = Router();
 
-// POST /api/analysis/run - Run analysis command
+// POST /api/analysis/run - Submit analysis task to queue
 analysisRouter.post('/run', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   const { projectId, command = 'make verify' } = req.body;
 
@@ -26,19 +25,18 @@ analysisRouter.post('/run', authMiddleware, async (req: AuthenticatedRequest, re
   const sessionId = uuidv4();
   const projectDir = project.local_path;
 
-  // Validate project directory
   if (!fs.existsSync(projectDir)) {
     throw new AppError(400, '项目本地目录不存在，请重新导入');
   }
 
-  // Create analysis session
+  // Create analysis session record
   await query(
     `INSERT INTO analysis_sessions (id, project_id, user_id, status, command)
      VALUES ($1, $2, $3, $4, $5)`,
-    [sessionId, projectId, req.user!.id, 'running', command]
+    [sessionId, projectId, req.user!.id, 'queued', command]
   );
 
-  // Set SSE headers for real-time output
+  // Set SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -46,63 +44,76 @@ analysisRouter.post('/run', authMiddleware, async (req: AuthenticatedRequest, re
 
   res.write(`data: ${JSON.stringify({ type: 'session_id', session_id: sessionId })}\n\n`);
 
-  try {
-    // Run the command
-    const child = exec(command, { cwd: projectDir, timeout: 300000 }); // 5 min timeout
+  // Enqueue task
+  globalTaskQueue.enqueue({
+    id: sessionId,
+    projectId,
+    userId: req.user!.id,
+    command,
+    projectDir,
+    status: 'queued',
+    createdAt: new Date(),
+    sseRes: res,
+  });
 
-    let output = '';
+  // Listen for task start to update DB
+  const onStarted = async (task: any) => {
+    if (task.id === sessionId) {
+      await query(
+        `UPDATE analysis_sessions SET status = 'running' WHERE id = $1`,
+        [sessionId]
+      );
+      globalTaskQueue.removeListener('started', onStarted);
+    }
+  };
+  globalTaskQueue.on('started', onStarted);
 
-    child.stdout?.on('data', (data: string) => {
-      output += data;
-      res.write(`data: ${JSON.stringify({ type: 'stdout', content: data })}\n\n`);
-    });
-
-    child.stderr?.on('data', (data: string) => {
-      output += data;
-      res.write(`data: ${JSON.stringify({ type: 'stderr', content: data })}\n\n`);
-    });
-
-    child.on('close', async (code) => {
-      // Parse results for Marivo output
-      const results = parseMarivoOutput(output);
-
-      // Update session
+  // Listen for completion to update DB
+  const onCompleted = async (task: any) => {
+    if (task.id === sessionId) {
       await query(
         `UPDATE analysis_sessions SET status = $1, output = $2, results = $3, completed_at = NOW() WHERE id = $4`,
-        [code === 0 ? 'completed' : 'failed', output, JSON.stringify(results), sessionId]
+        [task.status, task.output || '', JSON.stringify(task.results || {}), sessionId]
       );
+      globalTaskQueue.removeListener('completed', onCompleted);
+      globalTaskQueue.removeListener('failed', onCompleted);
+    }
+  };
+  globalTaskQueue.on('completed', onCompleted);
+  globalTaskQueue.on('failed', onCompleted);
+});
 
-      res.write(`data: ${JSON.stringify({ type: 'complete', exit_code: code, results })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
-    });
+// GET /api/analysis/queue - Get queue status
+analysisRouter.get('/queue', authMiddleware, async (_req: AuthenticatedRequest, res: Response) => {
+  const status = globalTaskQueue.getStatus();
+  res.json({
+    ...status,
+    queued: globalTaskQueue.getQueuedTasks(),
+    running: globalTaskQueue.getRunningTasks(),
+  });
+});
 
-    child.on('error', async (err) => {
-      await query(
-        `UPDATE analysis_sessions SET status = 'failed', output = $1, completed_at = NOW() WHERE id = $2`,
-        [err.message, sessionId]
-      );
-
-      res.write(`data: ${JSON.stringify({ type: 'error', content: err.message })}\n\n`);
-      res.write('data: [DONE]\n\n');
-      res.end();
-    });
-  } catch (err) {
+// DELETE /api/analysis/queue/:taskId - Cancel a queued task
+analysisRouter.delete('/queue/:taskId', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  const cancelled = globalTaskQueue.cancelTask(req.params.taskId);
+  if (cancelled) {
     await query(
-      `UPDATE analysis_sessions SET status = 'failed', completed_at = NOW() WHERE id = $1`,
-      [sessionId]
+      `UPDATE analysis_sessions SET status = 'failed', output = '任务已被取消', completed_at = NOW() WHERE id = $1`,
+      [req.params.taskId]
     );
-
-    res.write(`data: ${JSON.stringify({ type: 'error', content: (err as Error).message })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    res.json({ message: '任务已取消' });
+  } else {
+    throw new AppError(400, '无法取消该任务（可能正在运行或不存在）');
   }
 });
 
 // GET /api/analysis/sessions/:projectId - Get analysis history
 analysisRouter.get('/sessions/:projectId', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   const result = await query(
-    'SELECT id, status, command, started_at, completed_at FROM analysis_sessions WHERE project_id = $1 AND user_id = $2 ORDER BY started_at DESC',
+    `SELECT id, status, command, started_at, completed_at
+     FROM analysis_sessions
+     WHERE project_id = $1 AND user_id = $2
+     ORDER BY started_at DESC`,
     [req.params.projectId, req.user!.id]
   );
   res.json({ sessions: result.rows });
@@ -118,44 +129,3 @@ analysisRouter.get('/session/:id', authMiddleware, async (req: AuthenticatedRequ
   }
   res.json({ session: result.rows[0] });
 });
-
-function parseMarivoOutput(output: string): any {
-  const results: any = {
-    raw_output: output,
-    metrics: [],
-    warnings: [],
-    errors: [],
-  };
-
-  // Try to parse JSON output lines
-  const lines = output.split('\n');
-  for (const line of lines) {
-    try {
-      const parsed = JSON.parse(line);
-      if (parsed.metric) results.metrics.push(parsed);
-      if (parsed.warning) results.warnings.push(parsed.warning);
-      if (parsed.error) results.errors.push(parsed.error);
-    } catch {
-      // Not JSON line, skip
-    }
-  }
-
-  // Extract key metrics using regex patterns
-  const metricPatterns = [
-    { key: 'accuracy', pattern: /accuracy[:\s]*([\d.]+%?)/i },
-    { key: 'precision', pattern: /precision[:\s]*([\d.]+%?)/i },
-    { key: 'recall', pattern: /recall[:\s]*([\d.]+%?)/i },
-    { key: 'f1_score', pattern: /f1[:\s]*([\d.]+%?)/i },
-    { key: 'total_records', pattern: /total[:\s]*([\d,]+)/i },
-    { key: 'error_rate', pattern: /error[:\s]*([\d.]+%?)/i },
-  ];
-
-  for (const { key, pattern } of metricPatterns) {
-    const match = output.match(pattern);
-    if (match) {
-      results.metrics.push({ name: key, value: match[1] });
-    }
-  }
-
-  return results;
-}
